@@ -52,10 +52,16 @@ describe CarrierWave::Vips do
 
   describe "#convert" do
 
-    it 'converts from one format to another' do
+    it 'converts from jpg to png' do
       instance.convert('png')
       instance.process!
       expect(instance.filename).to match(/png$/)
+    end
+
+    it 'converts from jpg to webp' do
+      instance.convert('webp')
+      instance.process!
+      expect(instance.filename).to match(/webp$/)
     end
 
     it 'throws an error on gif' do

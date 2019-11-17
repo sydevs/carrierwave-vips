@@ -96,6 +96,24 @@ module CarrierWave
     end
 
     ##
+    # Enable lossless compression for webp images
+    #
+    def lossless(boolean)
+      write_opts[:lossless] = boolean
+    end
+
+    ##
+    # Level of CPU effort to reduce file size for webp images
+    # Corresponds to the -m (short for "method") option in cwebp
+    #
+    # === Parameters
+    # [level (Integer)] an integer from 1 (fastest, lowest quality) to 6 (slowest, highest quality)
+    #
+    def reduction_effort(level)
+      write_opts[:reduction_effort] = level
+    end
+
+    ##
     # Convert the file to a different format
     #
     #
@@ -106,7 +124,7 @@ module CarrierWave
     def convert(f, opts = {})
       opts = opts.dup
       f = f.to_s.downcase
-      allowed = %w(jpeg jpg png)
+      allowed = %w(jpeg jpg png webp)
       raise ArgumentError, "Format must be one of: #{allowed.join(',')}" unless allowed.include?(f)
       self.format_override = f == 'jpeg' ? 'jpg' : f
       opts[:Q] = opts.delete(:quality) if opts.has_key?(:quality)
@@ -222,7 +240,7 @@ module CarrierWave
         ext = format_override ? "_tmp.#{format_override}" : '_tmp\1'
         tmp_name = current_path.sub(ext_regex, ext)
         opts = write_opts.dup
-        opts.delete(:Q) unless write_jpeg?(tmp_name)
+        opts.delete(:Q) unless supports_quality?(tmp_name)
         @_vimage.write_to_file(tmp_name, **opts)
         FileUtils.mv(tmp_name, current_path)
         @_vimage = nil
@@ -278,8 +296,12 @@ module CarrierWave
       ext(path) == 'png'
     end
 
-    def write_jpeg?(path)
-      format_override == 'jpg' || jpeg?(path)
+    def webp?(path = current_path)
+      ext(path) == 'webp'
+    end
+
+    def supports_quality?(path)
+      %w[jpg webp].include?(format_override) || jpeg?(path) || webp?(path)
     end
 
     def ext(path)
